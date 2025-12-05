@@ -13,5 +13,17 @@ def fetch_rag_context(question_embedding):
         }
     ).execute()
 
-    chunks = [row["content"] for row in response.data]
+    # Some RPC definitions return different column names; fall back gracefully.
+    chunks = []
+    for row in response.data or []:
+        if "content" in row:
+            chunks.append(row["content"])
+        elif "question_text" in row:
+            chunks.append(row["question_text"])
+        else:
+            # Capture any other text-like fields
+            for key in ("text", "body", "doc"):
+                if key in row:
+                    chunks.append(row[key])
+                    break
     return "\n\n".join(chunks)
