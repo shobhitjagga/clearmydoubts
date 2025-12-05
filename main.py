@@ -2,10 +2,10 @@ from fastapi import FastAPI, Request
 import requests
 import os
 from dotenv import load_dotenv
-from gemini_utils import extract_question_from_image, create_embedding, generate_answer
-from supabase_utils import fetch_rag_context
-
 load_dotenv()
+from gemini_utils import extract_question_from_image, generate_answer
+from supabase_utils import fetch_rag_context,create_embedding
+
 
 app = FastAPI()
 
