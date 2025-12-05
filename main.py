@@ -13,18 +13,40 @@ WHATSAPP_TOKEN = os.getenv("WHATSAPP_TOKEN")
 PHONE_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID")
 
 def send_whatsapp_message(to, message):
+    """
+    WhatsApp text body must be <= 4096 chars. Split long replies into chunks.
+    """
+    if message is None:
+        print("No message to send")
+        return
+
+    text = str(message)
+    max_len = 4000  # keep a buffer under 4096
+    chunks = [text[i:i + max_len] for i in range(0, len(text), max_len)] or [text]
+
     url = f"https://graph.facebook.com/v20.0/{PHONE_ID}/messages"
     headers = {
         "Authorization": f"Bearer {WHATSAPP_TOKEN}",
         "Content-Type": "application/json"
     }
-    data = {
-        "messaging_product": "whatsapp",
-        "to": to,
-        "text": {"body": message}
-    }
-    response = requests.post(url, json=data, headers=headers)
-    print("WhatsApp response:", response.json())
+
+    for idx, part in enumerate(chunks, start=1):
+        data = {
+            "messaging_product": "whatsapp",
+            "to": to,
+            "text": {"body": part}
+        }
+        response = requests.post(url, json=data, headers=headers)
+        try:
+            resp_json = response.json()
+        except Exception:
+            resp_json = {"error": "failed to parse response", "status": response.status_code}
+
+        print(f"WhatsApp response (chunk {idx}/{len(chunks)}):", resp_json)
+
+        # If the API returns an error, stop sending remaining chunks to avoid spam
+        if response.status_code >= 400:
+            break
 
 @app.post("/webhook")
 @app.post("/whatsapp_webhook")
