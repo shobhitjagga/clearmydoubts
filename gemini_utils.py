@@ -1,7 +1,15 @@
 import google.generativeai as genai
 import os
+from prompts import ANSWER_PROMPT
 
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+def create_embedding(text):
+    result = genai.embed_content(
+        model="models/text-embedding-004",
+        content=text
+    )
+    return result['embedding']
 
 # Extract handwritten question from image
 def extract_question_from_image(img_bytes):

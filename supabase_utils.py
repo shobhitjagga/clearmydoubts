@@ -15,11 +15,3 @@ def fetch_rag_context(question_embedding):
 
     chunks = [row["content"] for row in response.data]
     return "\n\n".join(chunks)
-
-
-# Generate embedding using Gemini
-import google.generativeai as genai
-
-def create_embedding(text):
-    embed_model = genai.embed(model="models/text-embedding-004", text=text)
-    return embed_model["embedding"]

@@ -3,8 +3,8 @@ import requests
 import os
 from dotenv import load_dotenv
 load_dotenv()
-from gemini_utils import extract_question_from_image, generate_answer
-from supabase_utils import fetch_rag_context,create_embedding
+from gemini_utils import extract_question_from_image, generate_answer, create_embedding
+from supabase_utils import fetch_rag_context
 import json
 
 app = FastAPI()
@@ -27,19 +27,50 @@ def send_whatsapp_message(to, message):
     print("WhatsApp response:", response.json())
 
 @app.post("/webhook")
+@app.post("/whatsapp_webhook")
 async def whatsapp_webhook(request: Request):
-    data = await request.json()
-
-    # DEBUG: print the incoming WhatsApp message
-    print("Received WhatsApp payload:", json.dumps(data, indent=2))
-
     try:
-        entry = data["entry"][0]["changes"][0]["value"]
-        message = entry["messages"][0]
-        sender = message["from"]
+        data = await request.json()
+        
+        # DEBUG: print the incoming WhatsApp message
+        print("=" * 50)
+        print("Received WhatsApp payload:")
+        print(json.dumps(data, indent=2))
+        print("=" * 50)
+
+        # Handle webhook verification (GET request is handled separately)
+        if "hub" in data and "challenge" in data.get("hub", {}):
+            return {"status": "verification"}
+
+        entry = data.get("entry", [])
+        if not entry:
+            print("No entry found in payload")
+            return {"status": "ignored", "reason": "no_entry"}
+
+        changes = entry[0].get("changes", [])
+        if not changes:
+            print("No changes found in entry")
+            return {"status": "ignored", "reason": "no_changes"}
+
+        value = changes[0].get("value", {})
+        messages = value.get("messages", [])
+        
+        if not messages:
+            print("No messages found in value")
+            return {"status": "ignored", "reason": "no_messages"}
+
+        message = messages[0]
+        sender = message.get("from")
+        
+        if not sender:
+            print("No sender found in message")
+            return {"status": "ignored", "reason": "no_sender"}
+
+        print(f"Processing message from sender: {sender}")
 
         # If image
         if "image" in message:
+            print("Processing image message")
             media_id = message["image"]["id"]
 
             # get media URL
@@ -47,41 +78,73 @@ async def whatsapp_webhook(request: Request):
             media_resp = requests.get(
                 media_url,
                 headers={"Authorization": f"Bearer {WHATSAPP_TOKEN}"}
-            ).json()
+            )
+            media_resp.raise_for_status()
+            media_data = media_resp.json()
 
-            file_url = media_resp["url"]
-            img_bytes = requests.get(
+            file_url = media_data["url"]
+            img_resp = requests.get(
                 file_url,
                 headers={"Authorization": f"Bearer {WHATSAPP_TOKEN}"}
-            ).content
+            )
+            img_resp.raise_for_status()
+            img_bytes = img_resp.content
 
             # extract question
+            print("Extracting question from image...")
             question = extract_question_from_image(img_bytes)
+            print(f"Extracted question: {question}")
 
             # RAG context
+            print("Fetching RAG context...")
             q_embed = create_embedding(question)
             context = fetch_rag_context(q_embed)
 
             # generate answer
+            print("Generating answer...")
             answer = generate_answer(question, context)
+            print(f"Generated answer: {answer[:100]}...")
 
             send_whatsapp_message(sender, answer)
-            return {"status": "processed"}
+            return {"status": "processed", "type": "image"}
 
         # If text message
         if "text" in message:
+            print("Processing text message")
             question = message["text"]["body"]
+            print(f"Question: {question}")
+
+            # RAG context
+            print("Fetching RAG context...")
             q_embed = create_embedding(question)
             context = fetch_rag_context(q_embed)
+
+            # generate answer
+            print("Generating answer...")
             answer = generate_answer(question, context)
+            print(f"Generated answer: {answer[:100]}...")
+
             send_whatsapp_message(sender, answer)
-            return {"status": "processed"}
+            return {"status": "processed", "type": "text"}
 
+        print("Message type not supported")
+        return {"status": "ignored", "reason": "unsupported_message_type"}
+
+    except KeyError as e:
+        error_msg = f"Missing key in payload: {str(e)}"
+        print(f"Error: {error_msg}")
+        print(f"Payload keys: {list(data.keys()) if 'data' in locals() else 'N/A'}")
+        return {"status": "error", "message": error_msg}
+    except requests.RequestException as e:
+        error_msg = f"Request error: {str(e)}"
+        print(f"Error: {error_msg}")
+        return {"status": "error", "message": error_msg}
     except Exception as e:
-        print("Error:", e)
-        return {"status": "error"}
-
-    return {"status": "ignored"}
+        error_msg = f"Unexpected error: {str(e)}"
+        print(f"Error: {error_msg}")
+        import traceback
+        traceback.print_exc()
+        return {"status": "error", "message": error_msg}
 
 # For webhook verification
 @app.get("/webhook")
@@ -93,4 +156,16 @@ async def verify_token(request: Request):
 
 @app.get("/")
 def root():
-    return {"status": "Clearmydoubts API is live"}
+    return {"status": "Clearmydoubts API is live", "endpoints": ["/webhook", "/whatsapp_webhook", "/health"]}
+
+@app.get("/health")
+def health():
+    return {
+        "status": "healthy",
+        "service": "clearmydoubts",
+        "endpoints": {
+            "webhook": "/webhook",
+            "whatsapp_webhook": "/whatsapp_webhook",
+            "health": "/health"
+        }
+    }
