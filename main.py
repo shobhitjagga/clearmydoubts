@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 from gemini_utils import extract_question_from_image, generate_answer
 from supabase_utils import fetch_rag_context,create_embedding
-
+import json
 
 app = FastAPI()
 
@@ -23,11 +23,15 @@ def send_whatsapp_message(to, message):
         "to": to,
         "text": {"body": message}
     }
-    requests.post(url, json=data, headers=headers)
+    response = requests.post(url, json=data, headers=headers)
+    print("WhatsApp response:", response.json())
 
 @app.post("/webhook")
 async def whatsapp_webhook(request: Request):
     data = await request.json()
+
+    # DEBUG: print the incoming WhatsApp message
+    print("Received WhatsApp payload:", json.dumps(data, indent=2))
 
     try:
         entry = data["entry"][0]["changes"][0]["value"]
@@ -86,3 +90,7 @@ async def verify_token(request: Request):
     if params.get("hub.verify_token") == "mytoken":
         return int(params.get("hub.challenge"))
     return "Invalid"
+
+@app.get("/")
+def root():
+    return {"status": "Clearmydoubts API is live"}
