@@ -9,7 +9,8 @@ Retrieved NCERT + Past Year Exam Context:
 
 Write a board-exam-ready answer:
 - Use NCERT keywords
-- Keep it simple, concise and pointwise
+- Keep it simple, concise and to the point of the question
+- Use less than 1600 words for the answer
 - Add step-by-step reasoning
 - Add common mistakes students make
 - Add 2 similar practice questions
