@@ -31,7 +31,9 @@ def latex_to_text(text):
         r'\\log\b': 'log',
         r'\\ln\b': 'ln',
         r'\\exp\b': 'exp',
-        r'\\sqrt': 'sqrt',
+        r'\\arcsin\b': 'sin^-1',
+        r'\\arccos\b': 'cos^-1',
+        r'\\arctan\b': 'tan^-1',
         
         # Integrals and derivatives (must come before \\in)
         r'\\int\b': '∫',
@@ -131,6 +133,26 @@ def latex_to_text(text):
     # Apply replacements
     for pattern, replacement in replacements.items():
         text = re.sub(pattern, replacement, text)
+
+    # Square root with braces: \sqrt{a} -> √(a)
+    text = re.sub(r'\\sqrt\{([^}]+)\}', r'√(\1)', text)
+    # Square root without braces: \sqrt a -> √(a)
+    text = re.sub(r'\\sqrt\s+([a-zA-Z0-9]+)', r'√(\1)', text)
+    # Plain sqrt(...) -> √(...)
+    text = re.sub(r'\bsqrt\(([^)]+)\)', r'√(\1)', text)
+    # Plain sqrt x -> √(x)
+    text = re.sub(r'\bsqrt\s+([a-zA-Z0-9]+)', r'√(\1)', text)
+
+    # Inverse trig forms: \sin^{-1} x -> sin^-1 x
+    text = re.sub(r'sin\^\{-?1\}', r'sin^-1', text)
+    text = re.sub(r'cos\^\{-?1\}', r'cos^-1', text)
+    text = re.sub(r'tan\^\{-?1\}', r'tan^-1', text)
+    text = re.sub(r'sin\^\(-?1\)', r'sin^-1', text)
+    text = re.sub(r'cos\^\(-?1\)', r'cos^-1', text)
+    text = re.sub(r'tan\^\(-?1\)', r'tan^-1', text)
+
+    # Plain English inverse phrases: "sin inverse x" -> "sin^-1 x"
+    text = re.sub(r'\b(sin|cos|tan)\s+inverse\b', r'\1^-1', text, flags=re.IGNORECASE)
     
     # Clean up multiple spaces
     text = re.sub(r'\s+', ' ', text)

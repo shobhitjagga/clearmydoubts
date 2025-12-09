@@ -20,6 +20,8 @@ IMPORTANT FORMATTING INSTRUCTIONS:
 - For integrals, write: ∫ x sin(x) dx instead of \\int x \\sin x \\, dx
 - For fractions, write: (a)/(b) or a/b instead of \\frac{{a}}{{b}}
 - For powers, write: x^2 instead of x^{{2}}
+- For inverse trig, write: sin^-1(x), cos^-1(x), tan^-1(x) instead of arc/latex forms
+- For roots, write: √(x) instead of sqrt(x) or \\sqrt{x}
 - Use simple text: sin, cos, tan instead of \\sin, \\cos, \\tan
 - Keep mathematical expressions readable in plain text format
 - The message will be sent via WhatsApp which doesn't support LaTeX rendering

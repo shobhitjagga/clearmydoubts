@@ -39,13 +39,13 @@ def compress_image(img_bytes, max_size=(1024, 1024), quality=85):
 def create_embedding(text):
     """
     Generate OpenAI embedding for the input text.
-    Uses text-embedding-3-small with 768 dimensions (cheaper than large).
+    Uses text-embedding-3-small with 1536 dimensions.
     This ensures compatibility with Supabase vector tables.
     """
     response = client.embeddings.create(
         model="text-embedding-3-small",  # Cheaper than large, still high quality
         input=text,
-        dimensions=768  # Match Gemini's embedding dimension
+        dimensions=1536  # Match Gemini's embedding dimension
     )
     return response.data[0].embedding
 
