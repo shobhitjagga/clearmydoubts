@@ -5,3 +5,7 @@ requests
 google-generativeai>=0.8.0
 supabase
 pypdf
+twilio
+python-multipart
+openai>=1.0.0
+Pillow>=10.0.0
