@@ -3,7 +3,7 @@ import os
 
 supabase = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_KEY"))
 
-def get_rag_context(question_embedding):
+def fetch_rag_context(question_embedding):
     response = supabase.rpc(
         "match_cbse_context",
         {
